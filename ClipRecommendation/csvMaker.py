@@ -9,9 +9,10 @@ def save_dict_to_csv(data: dict, filename: str):
         print(f"An error occurred: {str(e)}")
 
 data = [
-    {"Name": "Alice", "Age": 25, "City": "New York"},
-    {"Name": "Bob", "Age": None, "City": "London"},
-    {"Name": None, "Age": 22, "City": None}
+    {"Uname": "Mubaris", "Study": 1, "Exam": 1, "Motivation": 1},
+    {"Uname": "Albin",  "Study": 1, "Exam": 1, "Motivation": 1},
+    {"Uname": "Jen",  "Study": 1, "Exam": 1, "Motivation": 1},
+    {"Uname": "Niketh",  "Study": 1, "Exam": 1, "Motivation": 1}
 ]
 
 save_dict_to_csv(data, "output.csv")

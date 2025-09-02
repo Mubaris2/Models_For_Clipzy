@@ -17,19 +17,23 @@ class ClipRecommender:
     feats = [c for c in df.columns if c not in set(drop_cols)]
     self.features = feats
     X = df[self.features].to_numpy(dtype=float)
+
     norm = np.linalg.norm(X, axis=0, keepdims=True)
     norm[norm == 0] = 1
     Xn = X / norm
     self.C = Xn.T @ Xn
     return self
 
-  def predict(self, x: dict):
+  def predict(self, x: dict, squash=True):
     vec = np.array([float(x.get(f, 0.0)) for f in self.features])
-    adjusted = vec @ self.C
-    max_abs = np.max(np.abs(adjusted)) or 1
-    adjusted = adjusted / max_abs
-    return {f: float(a) for f, a in zip(self.features, adjusted)}
-  
+    adjusted = self.C @ vec
+
+    if squash:
+      adjusted = np.tanh(adjusted)
+      adjusted = 0.8 * adjusted + 0.2 * vec  
+
+    return {f: float(f"{a:.6f}") for f, a in zip(self.features, adjusted)}
+    
 model = ClipRecommender()
 model.fit(df)
 dump(model, 'clipRecmodel.pkl')

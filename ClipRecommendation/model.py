@@ -13,27 +13,33 @@ class ClipRecommender:
     self.features = None
     self.lastdf = None
     self.trending = []
+    self.norm = None 
 
   def fit(self, df: pd.DataFrame, drop_cols=("Uname",)):
     self.features = [c for c in df.columns if c not in set(drop_cols)]
     if self.lastdf is not None:
-      trending_scores = {f: 0.0 for f in self.features}
-      for row in range(len(self.lastdf)):
-        for f in self.features:
-          trending_scores[f] += df.iloc[row][f] - self.lastdf.iloc[row][f]
+      common = df.merge(self.lastdf, on="Uname", suffixes=("_new", "_old"))
+      trending_scores = {}
+      for f in self.features:
+        trending_scores[f] = (common[f + "_new"] - common[f + "_old"]).sum()
       self.trending = sorted(trending_scores.items(), key=lambda x:x[1], reverse=True)
 
-    X = df[self.features].to_numpy(dtype=float)
-    norm = np.linalg.norm(X, axis=0, keepdims=True)
-    norm[norm == 0] = 1
-    Xn = X / norm
+      X_new = df[self.features].iloc[len(self.lastdf):].to_numpy(dtype=float)
+      Xn_new = X_new / self.norm
+      self.C += Xn_new.T @ Xn_new
+    else:
+      X = df[self.features].to_numpy(dtype=float)
+      self.norm = np.linalg.norm(X, axis=0, keepdims=True)
+      self.norm[self.norm == 0] = 1
+      Xn = X / self.norm
+      self.C = Xn.T @ Xn
 
-    self.C = Xn.T @ Xn
     self.lastdf = df.copy()
     return self
 
   def predict(self, x: dict, squash=True):
     vec = np.array([float(x.get(f, 0.0)) for f in self.features])
+    vec = vec / self.norm.flatten()
     adjusted = self.C @ vec
 
     if squash:
